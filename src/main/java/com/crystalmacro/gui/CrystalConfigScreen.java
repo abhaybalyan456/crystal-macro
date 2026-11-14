@@ -92,9 +92,10 @@ public class CrystalConfigScreen extends Screen {
         ));
 
         // 6. Done Button
-        this.addDrawableChild(ButtonWidget.builder(Text.literal("Done"), button -> {
+        ButtonWidget doneButton = ButtonWidget.builder(Text.literal("Done"), button -> {
             this.close();
         }).dimensions(centerX - (widgetWidth / 2), startY + spacing * 6, widgetWidth, widgetHeight).build();
+        this.addDrawableChild(doneButton);
     }
 
     private Text getToggleText() {
