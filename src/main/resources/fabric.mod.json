@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "crystalmacro",
+  "version": "${version}",
+  "name": "Crystal Macro",
+  "description": "Client-side End Crystal macro with hold-to-activate behavior and in-game configuration dashboard.",
+  "authors": [
+    "Antigravity"
+  ],
+  "contact": {},
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.crystalmacro.CrystalMacroMod"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.15.0",
+    "minecraft": "~1.20.4",
+    "java": ">=17",
+    "fabric-api": "*"
+  }
+}
