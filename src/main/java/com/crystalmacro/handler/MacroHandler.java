@@ -31,7 +31,7 @@ public class MacroHandler {
         }
 
         // 2. GUI check: Do not execute while any screen is open
-        if (client.screen != null) {
+        if (client.gui.screen != null) {
             return;
         }
 
@@ -104,7 +104,7 @@ public class MacroHandler {
     }
 
     private static boolean isActivationKeyDown(Minecraft client, MacroConfig config) {
-        long windowHandle = client.getWindow().getHandle();
+        long windowHandle = client.getWindow().getWindow();
         if (windowHandle == 0) {
             return false;
         }

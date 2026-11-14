@@ -5,9 +5,10 @@ import com.crystalmacro.config.ConfigManager;
 import com.crystalmacro.config.MacroConfig;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
@@ -113,20 +114,20 @@ public class CrystalConfigScreen extends Screen {
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(KeyEvent event) {
         if (listeningForKey) {
-            if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+            if (event.key() == GLFW.GLFW_KEY_ESCAPE) {
                 listeningForKey = false;
                 keybindButton.setMessage(getKeybindText());
                 return true;
             }
 
-            config.activationKeyCode = keyCode;
+            config.activationKeyCode = event.key();
             config.isActivationMouse = false;
 
-            String name = InputConstants.getKey(keyCode, scanCode).getDisplayName().getString();
+            String name = InputConstants.getKey(event).getDisplayName().getString();
             if (name == null || name.isEmpty() || name.equalsIgnoreCase("null")) {
-                name = "Key " + keyCode;
+                name = "Key " + event.key();
             }
             config.activationKeyName = name.toUpperCase();
 
@@ -135,49 +136,33 @@ public class CrystalConfigScreen extends Screen {
             return true;
         }
 
-        if (CrystalMacroMod.guiKeyBinding.matches(keyCode, scanCode)) {
+        if (CrystalMacroMod.guiKeyBinding.matches(event)) {
             this.onClose();
             return true;
         }
 
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.keyPressed(event);
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         if (listeningForKey) {
-            config.activationKeyCode = button;
+            config.activationKeyCode = event.button();
             config.isActivationMouse = true;
-            config.activationKeyName = "Mouse " + (button + 1);
+            config.activationKeyName = "Mouse " + (event.button() + 1);
             listeningForKey = false;
             keybindButton.setMessage(getKeybindText());
             return true;
         }
 
-        return super.mouseClicked(mouseX, mouseY, button);
-    }
-
-    @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float delta) {
-        this.renderBackground(guiGraphics, mouseX, mouseY, delta);
-        guiGraphics.drawCenteredString(this.font, this.title, this.width / 2, 16, 0xFFFFFF);
-
-        guiGraphics.drawCenteredString(
-                this.font,
-                Component.literal("Macro only runs while holding an End Crystal in hand").withStyle(ChatFormatting.GRAY),
-                this.width / 2,
-                40 + (26 * 5) + 6,
-                0xAAAAAA
-        );
-
-        super.render(guiGraphics, mouseX, mouseY, delta);
+        return super.mouseClicked(event, doubleClick);
     }
 
     @Override
     public void onClose() {
         ConfigManager.save();
         if (this.minecraft != null) {
-            this.minecraft.setScreen(this.parent);
+            this.minecraft.gui.setScreen(this.parent);
         }
     }
 
