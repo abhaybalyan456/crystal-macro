@@ -3,23 +3,23 @@ package com.crystalmacro.gui;
 import com.crystalmacro.CrystalMacroMod;
 import com.crystalmacro.config.ConfigManager;
 import com.crystalmacro.config.MacroConfig;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.util.InputUtil;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
 public class CrystalConfigScreen extends Screen {
     private final Screen parent;
     private final MacroConfig config;
-    private ButtonWidget toggleButton;
-    private ButtonWidget keybindButton;
+    private Button toggleButton;
+    private Button keybindButton;
     private boolean listeningForKey = false;
 
     public CrystalConfigScreen(Screen parent) {
-        super(Text.literal("Crystal Macro Settings"));
+        super(Component.literal("Crystal Macro Settings"));
         this.parent = parent;
         this.config = ConfigManager.getConfig();
     }
@@ -33,21 +33,21 @@ public class CrystalConfigScreen extends Screen {
         int widgetHeight = 20;
 
         // 1. Master Toggle Button
-        toggleButton = ButtonWidget.builder(getToggleText(), button -> {
+        toggleButton = Button.builder(getToggleText(), button -> {
             config.enabled = !config.enabled;
             button.setMessage(getToggleText());
-        }).dimensions(centerX - (widgetWidth / 2), startY, widgetWidth, widgetHeight).build();
-        this.addDrawableChild(toggleButton);
+        }).bounds(centerX - (widgetWidth / 2), startY, widgetWidth, widgetHeight).build();
+        this.addRenderableWidget(toggleButton);
 
         // 2. Activation Keybind Button
-        keybindButton = ButtonWidget.builder(getKeybindText(), button -> {
+        keybindButton = Button.builder(getKeybindText(), button -> {
             listeningForKey = true;
-            button.setMessage(Text.literal("> Press Key or Mouse <").formatted(Formatting.YELLOW));
-        }).dimensions(centerX - (widgetWidth / 2), startY + spacing, widgetWidth, widgetHeight).build();
-        this.addDrawableChild(keybindButton);
+            button.setMessage(Component.literal("> Press Key or Mouse <").withStyle(ChatFormatting.YELLOW));
+        }).bounds(centerX - (widgetWidth / 2), startY + spacing, widgetWidth, widgetHeight).build();
+        this.addRenderableWidget(keybindButton);
 
         // 3. Target CPS Slider (1 to 20 CPS)
-        this.addDrawableChild(new DoubleSliderWidget(
+        this.addRenderableWidget(new DoubleSliderWidget(
                 centerX - (widgetWidth / 2),
                 startY + spacing * 2,
                 widgetWidth,
@@ -62,7 +62,7 @@ public class CrystalConfigScreen extends Screen {
         ));
 
         // 4. Place Delay Slider (0ms to 500ms)
-        this.addDrawableChild(new DoubleSliderWidget(
+        this.addRenderableWidget(new DoubleSliderWidget(
                 centerX - (widgetWidth / 2),
                 startY + spacing * 3,
                 widgetWidth,
@@ -77,7 +77,7 @@ public class CrystalConfigScreen extends Screen {
         ));
 
         // 5. Break Delay Slider (0ms to 500ms)
-        this.addDrawableChild(new DoubleSliderWidget(
+        this.addRenderableWidget(new DoubleSliderWidget(
                 centerX - (widgetWidth / 2),
                 startY + spacing * 4,
                 widgetWidth,
@@ -92,23 +92,23 @@ public class CrystalConfigScreen extends Screen {
         ));
 
         // 6. Done Button
-        ButtonWidget doneButton = ButtonWidget.builder(Text.literal("Done"), button -> {
-            this.close();
-        }).dimensions(centerX - (widgetWidth / 2), startY + spacing * 6, widgetWidth, widgetHeight).build();
-        this.addDrawableChild(doneButton);
+        Button doneButton = Button.builder(Component.literal("Done"), button -> {
+            this.onClose();
+        }).bounds(centerX - (widgetWidth / 2), startY + spacing * 6, widgetWidth, widgetHeight).build();
+        this.addRenderableWidget(doneButton);
     }
 
-    private Text getToggleText() {
-        return Text.literal("Macro: ").append(
+    private Component getToggleText() {
+        return Component.literal("Macro: ").append(
                 config.enabled
-                        ? Text.literal("ENABLED").formatted(Formatting.GREEN)
-                        : Text.literal("DISABLED").formatted(Formatting.RED)
+                        ? Component.literal("ENABLED").withStyle(ChatFormatting.GREEN)
+                        : Component.literal("DISABLED").withStyle(ChatFormatting.RED)
         );
     }
 
-    private Text getKeybindText() {
-        return Text.literal("Hold Key: ").append(
-                Text.literal(config.activationKeyName).formatted(Formatting.AQUA)
+    private Component getKeybindText() {
+        return Component.literal("Hold Key: ").append(
+                Component.literal(config.activationKeyName).withStyle(ChatFormatting.AQUA)
         );
     }
 
@@ -124,7 +124,7 @@ public class CrystalConfigScreen extends Screen {
             config.activationKeyCode = keyCode;
             config.isActivationMouse = false;
 
-            String name = InputUtil.fromKeyCode(keyCode, scanCode).getLocalizedText().getString();
+            String name = InputConstants.getKey(keyCode, scanCode).getDisplayName().getString();
             if (name == null || name.isEmpty() || name.equalsIgnoreCase("null")) {
                 name = "Key " + keyCode;
             }
@@ -135,9 +135,8 @@ public class CrystalConfigScreen extends Screen {
             return true;
         }
 
-        // Allow toggling closed with the Page Down key
-        if (CrystalMacroMod.guiKeyBinding.matchesKey(keyCode, scanCode)) {
-            this.close();
+        if (CrystalMacroMod.guiKeyBinding.matches(keyCode, scanCode)) {
+            this.onClose();
             return true;
         }
 
@@ -159,31 +158,31 @@ public class CrystalConfigScreen extends Screen {
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        this.renderBackground(context, mouseX, mouseY, delta);
-        context.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, 16, 0xFFFFFF);
+    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float delta) {
+        this.renderBackground(guiGraphics, mouseX, mouseY, delta);
+        guiGraphics.drawCenteredString(this.font, this.title, this.width / 2, 16, 0xFFFFFF);
 
-        context.drawCenteredTextWithShadow(
-                this.textRenderer,
-                Text.literal("Macro only runs while holding an End Crystal in hand").formatted(Formatting.GRAY),
+        guiGraphics.drawCenteredString(
+                this.font,
+                Component.literal("Macro only runs while holding an End Crystal in hand").withStyle(ChatFormatting.GRAY),
                 this.width / 2,
                 40 + (26 * 5) + 6,
                 0xAAAAAA
         );
 
-        super.render(context, mouseX, mouseY, delta);
+        super.render(guiGraphics, mouseX, mouseY, delta);
     }
 
     @Override
-    public void close() {
+    public void onClose() {
         ConfigManager.save();
-        if (this.client != null) {
-            this.client.setScreen(this.parent);
+        if (this.minecraft != null) {
+            this.minecraft.setScreen(this.parent);
         }
     }
 
     @Override
-    public boolean shouldPause() {
+    public boolean isPauseScreen() {
         return false;
     }
 }

@@ -2,19 +2,19 @@ package com.crystalmacro.handler;
 
 import com.crystalmacro.config.ConfigManager;
 import com.crystalmacro.config.MacroConfig;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.decoration.EndCrystalEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.hit.EntityHitResult;
-import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.world.phys.HitResult;
 import org.lwjgl.glfw.GLFW;
 
 public class MacroHandler {
@@ -22,7 +22,7 @@ public class MacroHandler {
     private static long lastPlaceTime = 0;
     private static long lastBreakTime = 0;
 
-    public static void onTick(MinecraftClient client) {
+    public static void onTick(Minecraft client) {
         MacroConfig config = ConfigManager.getConfig();
 
         // 1. Master toggle check
@@ -30,13 +30,13 @@ public class MacroHandler {
             return;
         }
 
-        // 2. GUI / Chat check: Do not execute while any screen or chat is open
-        if (client.currentScreen != null) {
+        // 2. GUI check: Do not execute while any screen is open
+        if (client.screen != null) {
             return;
         }
 
         // 3. Client state verification
-        if (client.player == null || client.world == null || client.interactionManager == null) {
+        if (client.player == null || client.level == null || client.gameMode == null) {
             return;
         }
 
@@ -46,18 +46,18 @@ public class MacroHandler {
         }
 
         // 5. Slot Safety Check: Must be holding an End Crystal in main hand or off-hand
-        ItemStack mainHand = client.player.getMainHandStack();
-        ItemStack offHand = client.player.getOffHandStack();
-        Hand crystalHand = null;
+        ItemStack mainHand = client.player.getMainHandItem();
+        ItemStack offHand = client.player.getOffhandItem();
+        InteractionHand crystalHand = null;
 
-        if (mainHand.isOf(Items.END_CRYSTAL)) {
-            crystalHand = Hand.MAIN_HAND;
-        } else if (offHand.isOf(Items.END_CRYSTAL)) {
-            crystalHand = Hand.OFF_HAND;
+        if (mainHand.is(Items.END_CRYSTAL)) {
+            crystalHand = InteractionHand.MAIN_HAND;
+        } else if (offHand.is(Items.END_CRYSTAL)) {
+            crystalHand = InteractionHand.OFF_HAND;
         }
 
         if (crystalHand == null) {
-            return; // Not holding End Crystal in either hand
+            return;
         }
 
         // 6. Timing & Rate Limiting Check
@@ -67,36 +67,34 @@ public class MacroHandler {
             return;
         }
 
-        // 7. Crosshair Target Evaluation (Vanilla Reach)
-        HitResult target = client.crosshairTarget;
+        // 7. Crosshair Target Evaluation
+        HitResult target = client.hitResult;
         if (target == null) {
             return;
         }
 
         if (target.getType() == HitResult.Type.ENTITY) {
-            // Detonation logic: targeted End Crystal entity
             EntityHitResult entityHit = (EntityHitResult) target;
             Entity entity = entityHit.getEntity();
 
-            if (entity instanceof EndCrystalEntity crystal && crystal.isAlive()) {
+            if (entity instanceof EndCrystal crystal && crystal.isAlive()) {
                 if (now - lastBreakTime >= config.breakDelayMs) {
-                    client.interactionManager.attackEntity(client.player, crystal);
-                    client.player.swingHand(Hand.MAIN_HAND);
+                    client.gameMode.attack(client.player, crystal);
+                    client.player.swing(InteractionHand.MAIN_HAND);
                     lastBreakTime = now;
                     lastActionTime = now;
                 }
             }
         } else if (target.getType() == HitResult.Type.BLOCK) {
-            // Placement logic: looking at Obsidian or Bedrock
             BlockHitResult blockHit = (BlockHitResult) target;
             BlockPos pos = blockHit.getBlockPos();
-            BlockState state = client.world.getBlockState(pos);
+            BlockState state = client.level.getBlockState(pos);
 
-            if (state.isOf(Blocks.OBSIDIAN) || state.isOf(Blocks.BEDROCK)) {
+            if (state.is(Blocks.OBSIDIAN) || state.is(Blocks.BEDROCK)) {
                 if (now - lastPlaceTime >= config.placeDelayMs) {
-                    ActionResult result = client.interactionManager.interactBlock(client.player, crystalHand, blockHit);
-                    if (result.isAccepted()) {
-                        client.player.swingHand(crystalHand);
+                    InteractionResult result = client.gameMode.useItemOn(client.player, crystalHand, blockHit);
+                    if (result.consumesAction()) {
+                        client.player.swing(crystalHand);
                         lastPlaceTime = now;
                         lastActionTime = now;
                     }
@@ -105,7 +103,7 @@ public class MacroHandler {
         }
     }
 
-    private static boolean isActivationKeyDown(MinecraftClient client, MacroConfig config) {
+    private static boolean isActivationKeyDown(Minecraft client, MacroConfig config) {
         long windowHandle = client.getWindow().getHandle();
         if (windowHandle == 0) {
             return false;
