@@ -3,7 +3,7 @@
   "id": "crystalmacro",
   "version": "${version}",
   "name": "Crystal Macro",
-  "description": "Client-side End Crystal macro with hold-to-activate behavior and in-game configuration dashboard.",
+  "description": "Client-side End Crystal macro with hold-to-activate behavior and in-game configuration dashboard for Minecraft 26.2.",
   "authors": [
     "Antigravity"
   ],
@@ -16,9 +16,9 @@
     ]
   },
   "depends": {
-    "fabricloader": ">=0.15.0",
-    "minecraft": "~1.20.4",
-    "java": ">=17",
+    "fabricloader": ">=0.19.0",
+    "minecraft": "~26.2",
+    "java": ">=21",
     "fabric-api": "*"
   }
 }
